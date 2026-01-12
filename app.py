@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from pricer import OptionPricer
 from bsm_pricer import bsm_price, bsm_greeks
+from market_data import fetch_market_data, fetch_options_chain
 import json
 from datetime import datetime, date
 
@@ -30,7 +31,7 @@ def debug_log(location, message, data, hypothesis_id=None):
 
 # Page configuration
 st.set_page_config(
-    page_title="Options & Exotic Pricer",
+    page_title="Options & Exotic Options Pricer",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -72,16 +73,48 @@ st.markdown("---")
 
 # Sidebar for inputs
 with st.sidebar:
+    st.header("📊 Market Data")
+    
+    # Ticker input for real-time data
+    ticker = st.text_input(
+        "Stock Ticker",
+        value="",
+        placeholder="e.g., AAPL, MSFT, TSLA",
+        help="Enter a stock ticker to fetch real-time market data"
+    )
+    
+    # Fetch market data if ticker is provided
+    market_data = None
+    if ticker:
+        try:
+            with st.spinner(f"Fetching data for {ticker}..."):
+                market_data = fetch_market_data(ticker.upper())
+                st.success(f"✅ {market_data['name']} ({market_data['ticker']})")
+                if market_data.get('currency'):
+                    st.caption(f"Currency: {market_data['currency']}")
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
+            market_data = None
+    
+    st.markdown("---")
     st.header("⚙️ Market Parameters")
     
+    # Auto-populate spot price from market data if available
+    default_s0 = market_data['spot'] if market_data else 100.0
     s0 = st.number_input(
-        "Initial Stock Price (S₀)",
+        "Spot Price (S₀)",
         min_value=1.0,
-        max_value=1000.0,
-        value=100.0,
-        step=1.0,
-        help="Current price of the underlying asset"
+        max_value=10000.0,
+        value=default_s0,
+        step=0.01,
+        help="Current price of the underlying asset (auto-filled from ticker if provided)"
     )
+    
+    # Show spot price indicator if fetched from market
+    if market_data:
+        st.caption(f"💡 Latest spot price: ${market_data['spot']:.2f}")
+        if market_data.get('volatility'):
+            st.caption(f"📈 30-day historical volatility: {market_data['volatility']*100:.2f}%")
     
     r = st.number_input(
         "Risk-Free Rate (r)",
