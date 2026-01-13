@@ -1,6 +1,6 @@
 import numpy as np
 from stochastic_process import GBMProcess
-from instruments import VanillaOption, AsianOption, BarrierOption, LookbackOption
+from instruments import VanillaOption, AsianOption, BarrierOption, LookbackOption, DigitalOption
 from greek_calculator import GreekCalculator
 
 
