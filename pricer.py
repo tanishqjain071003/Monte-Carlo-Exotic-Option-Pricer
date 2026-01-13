@@ -73,7 +73,7 @@ class OptionPricer:
                 lookback=params.get('lookback', 'min'),
                 option_type=params.get('option_type', 'call')
             )
-         elif instrument_type == 'digital':
+        elif instrument_type == 'digital':
             return DigitalOption(
                 strike=params.get('strike', 100),
                 payout=params.get('payout', 10),
