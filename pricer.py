@@ -1,6 +1,3 @@
-"""
-Main Pricer Module - Connects all components together
-"""
 import numpy as np
 from stochastic_process import GBMProcess
 from instruments import VanillaOption, AsianOption, BarrierOption, LookbackOption
@@ -61,7 +58,8 @@ class OptionPricer:
         elif instrument_type == 'asian':
             return AsianOption(
                 strike=params.get('strike', 100),
-                option_type=params.get('option_type', 'call')
+                option_type=params.get('option_type', 'call'),
+                avg_type=params.get('avg_type', 'arithmetic')
             )
         elif instrument_type == 'barrier':
             return BarrierOption(
