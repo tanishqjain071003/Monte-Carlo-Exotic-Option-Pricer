@@ -986,7 +986,7 @@ else:
     st.info("👈 Please configure the parameters in the sidebar and click 'Calculate Price & Greeks' to begin.")
     
     # Information section
-    with st.expander("ℹ️ About This Application", expanded=True)):
+    with st.expander("ℹ️ About This Application")):
         st.markdown("""
         ### Options & Exotic Options Pricer
         
