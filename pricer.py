@@ -1,6 +1,6 @@
 import numpy as np
 from stochastic_process import GBMProcess
-from instruments import VanillaOption, AsianOption, BarrierOption, LookbackOption
+from instruments import VanillaOption, AsianOption, BarrierOption, LookbackOption, DigitalOption
 from greek_calculator import GreekCalculator
 
 
@@ -73,6 +73,12 @@ class OptionPricer:
                 lookback=params.get('lookback', 'min'),
                 option_type=params.get('option_type', 'call')
             )
+         elif instrument_type == 'digital':
+            return DigitalOption(
+                strike=params.get('strike', 100),
+                payout=params.get('payout', 10),
+                option_type=params.get('option_type', 'call')
+            )
         else:
             raise ValueError(f"Unknown instrument type: {instrument_type}")
     
@@ -131,7 +137,7 @@ class OptionPricer:
         """
         original_paths = self.process.paths
         self.process.paths = n_paths
-        paths = self.process.generate_paths()  # No antithetic parameter needed
+        paths = self.process.generate_paths()  
         self.process.paths = original_paths
         return paths
 

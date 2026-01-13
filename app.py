@@ -223,7 +223,7 @@ with st.sidebar:
     
     instrument_type = st.selectbox(
         "Option Type",
-        ["Vanilla", "Asian", "Barrier", "Lookback"],
+        ["Vanilla", "Asian", "Barrier", "Lookback", "Digital"],
         help="Select the type of option to price"
     )
     
@@ -244,6 +244,26 @@ with st.sidebar:
         )
         instrument_params = {
             'strike': strike,
+            'option_type': option_type.lower()
+        }
+    elif instrument_type == "Digital":
+        strike = st.number_input(
+            "Strike Price (K)",
+            min_value=1.0,
+            max_value=100000.0,
+            value=100.0,
+            step=1.0
+        )
+        payout = st.number_input(
+            "Payout Amount",
+            min_value=1.0,
+            max_value=100000.0,
+            value=10.0,
+            step=1.0
+        )
+        instrument_params = {
+            'strike': strike,
+            'payout': payout,
             'option_type': option_type.lower()
         }
     
@@ -410,7 +430,6 @@ if st.session_state.results is not None:
                 help="Monte Carlo estimated option price"
             )
             
-            
             # BSM benchmark for vanilla options
             if pricer_params['instrument'] == 'vanilla':
                 strike = pricer_params['instrument_params'].get('strike', 100)
@@ -423,50 +442,225 @@ if st.session_state.results is not None:
                     pricer_params['sigma'],
                     option_type
                 )
+                
                 diff = results['price'] - bsm_price_val
                 diff_pct = (diff / bsm_price_val * 100) if bsm_price_val > 0 else 0
-                
                 st.metric(
                     "Option Price (BSM)",
                     f"${bsm_price_val:.3f}",
                     delta=f"{diff:+.3f} ({diff_pct:+.2f}%)",
                     help="Black-Scholes-Merton analytical price (benchmark)"
                 )
+                
                 st.caption(f"MC vs BSM: {abs(diff):.3f} difference")
-        
+
+        # Calculate BSM Greeks for comparison (only for vanilla options)
+        bsm_greeks_vals = None
+        if pricer_params['instrument'] == 'vanilla':
+            strike = pricer_params['instrument_params'].get('strike', 100)
+            option_type = pricer_params['instrument_params'].get('option_type', 'call')
+            bsm_greeks_vals = bsm_greeks(
+                pricer_params['s0'],
+                strike,
+                pricer_params['T'],
+                pricer_params['r'],
+                pricer_params['sigma'],
+                option_type
+            )
+
+
         with col2:
-            st.metric(
-                "Delta (Δ)",
-                f"{results['greeks']['delta']:.3f}",
-                help="Sensitivity to underlying price changes"
-            )
-            st.metric(
-                "Gamma (Γ)",
-                f"{results['greeks']['gamma']:.3f}",
-                help="Rate of change of Delta"
-            )
-        
+            mc_delta = results['greeks']['delta']
+            if bsm_greeks_vals:
+                bsm_delta = bsm_greeks_vals['delta']
+                delta_diff = mc_delta - bsm_delta
+                st.metric(
+                    "Delta (Δ) - MC",
+                    f"{mc_delta:.3f}",
+                    delta=f"{delta_diff:+.3f} vs BSM",
+                    help="Monte Carlo Delta"
+                )
+                st.caption(f"BSM Delta: {bsm_delta:.3f}")
+            else:
+                st.metric(
+                    "Delta (Δ)",
+                    f"{mc_delta:.3f}",
+                    help="Sensitivity to underlying price changes"
+                )
+            
+            mc_gamma = results['greeks']['gamma']
+            if bsm_greeks_vals:
+                bsm_gamma = bsm_greeks_vals['gamma']
+                gamma_diff = mc_gamma - bsm_gamma
+                st.metric(
+                    "Gamma (Γ) - MC",
+                    f"{mc_gamma:.3f}",
+                    delta=f"{gamma_diff:+.3f} vs BSM",
+                    help="Monte Carlo Gamma"
+                )
+                st.caption(f"BSM Gamma: {bsm_gamma:.3f}")
+            else:
+                st.metric(
+                    "Gamma (Γ)",
+                    f"{mc_gamma:.3f}",
+                    help="Rate of change of Delta"
+                )
+
         with col3:
-            st.metric(
-                "Vega (ν)",
-                f"{results['greeks']['vega']:.3f}",
-                help="Sensitivity to volatility changes"
-            )
-            st.metric(
-                "Rho (ρ)",
-                f"{results['greeks']['rho']:.3f}",
-                help="Sensitivity to interest rate changes"
-            )
-        
+            mc_vega = results['greeks']['vega']
+            if bsm_greeks_vals:
+                bsm_vega = bsm_greeks_vals['vega']
+                vega_diff = mc_vega - bsm_vega
+                st.metric(
+                    "Vega (ν) - MC",
+                    f"{mc_vega:.3f}",
+                    delta=f"{vega_diff:+.3f} vs BSM",
+                    help="Monte Carlo Vega"
+                )
+                st.caption(f"BSM Vega: {bsm_vega:.3f}")
+            else:
+                st.metric(
+                    "Vega (ν)",
+                    f"{mc_vega:.3f}",
+                    help="Sensitivity to volatility changes"
+                )
+            
+            mc_rho = results['greeks']['rho']
+            if bsm_greeks_vals:
+                bsm_rho = bsm_greeks_vals['rho']
+                rho_diff = mc_rho - bsm_rho
+                st.metric(
+                    "Rho (ρ) - MC",
+                    f"{mc_rho:.3f}",
+                    delta=f"{rho_diff:+.3f} vs BSM",
+                    help="Monte Carlo Rho"
+                )
+                st.caption(f"BSM Rho: {bsm_rho:.3f}")
+            else:
+                st.metric(
+                    "Rho (ρ)",
+                    f"{mc_rho:.4f}",
+                    help="Sensitivity to interest rate changes"
+                )
+
         # Theta in a separate row
         col4, col5, col6 = st.columns(3)
         with col4:
-            st.metric(
-                "Theta (Θ)",
-                f"{results['greeks']['theta']:.3f}",
-                help="Time decay of option value"
+            mc_theta = results['greeks']['theta']
+            if bsm_greeks_vals:
+                bsm_theta = bsm_greeks_vals['theta']
+                theta_diff = mc_theta - bsm_theta
+                st.metric(
+                    "Theta (Θ) - MC",
+                    f"{mc_theta:.3f}",
+                    delta=f"{theta_diff:+.3f} vs BSM",
+                    help="Monte Carlo Theta"
+                )
+                st.caption(f"BSM Theta: {bsm_theta:.3f}")
+            else:
+                st.metric(
+                    "Theta (Θ)",
+                    f"{mc_theta:.3f}",
+                    help="Time decay of option value"
+                )
+
+        # Add a comparison table for vanilla options
+        if bsm_greeks_vals:
+            st.markdown("---")
+            st.subheader("📊 MC vs BSM Greeks Comparison")
+            
+            comparison_data = {
+                'Greek': ['Delta', 'Gamma', 'Vega', 'Rho', 'Theta'],
+                'Monte Carlo': [
+                    results['greeks']['delta'],
+                    results['greeks']['gamma'],
+                    results['greeks']['vega'],
+                    results['greeks']['rho'],
+                    results['greeks']['theta']
+                ],
+                'BSM Analytical': [
+                    bsm_greeks_vals['delta'],
+                    bsm_greeks_vals['gamma'],
+                    bsm_greeks_vals['vega'],
+                    bsm_greeks_vals['rho'],
+                    bsm_greeks_vals['theta']
+                ],
+                'Difference': [
+                    results['greeks']['delta'] - bsm_greeks_vals['delta'],
+                    results['greeks']['gamma'] - bsm_greeks_vals['gamma'],
+                    results['greeks']['vega'] - bsm_greeks_vals['vega'],
+                    results['greeks']['rho'] - bsm_greeks_vals['rho'],
+                    results['greeks']['theta'] - bsm_greeks_vals['theta']
+                ],
+                'Error %': [
+                    abs((results['greeks']['delta'] - bsm_greeks_vals['delta']) / bsm_greeks_vals['delta'] * 100) if bsm_greeks_vals['delta'] != 0 else 0,
+                    abs((results['greeks']['gamma'] - bsm_greeks_vals['gamma']) / bsm_greeks_vals['gamma'] * 100) if bsm_greeks_vals['gamma'] != 0 else 0,
+                    abs((results['greeks']['vega'] - bsm_greeks_vals['vega']) / bsm_greeks_vals['vega'] * 100) if bsm_greeks_vals['vega'] != 0 else 0,
+                    abs((results['greeks']['rho'] - bsm_greeks_vals['rho']) / bsm_greeks_vals['rho'] * 100) if bsm_greeks_vals['rho'] != 0 else 0,
+                    abs((results['greeks']['theta'] - bsm_greeks_vals['theta']) / bsm_greeks_vals['theta'] * 100) if bsm_greeks_vals['theta'] != 0 else 0,
+                ]
+            }
+            
+            comparison_df = pd.DataFrame(comparison_data)
+            
+            st.dataframe(
+                comparison_df.style.format({
+                    'Monte Carlo': '{:.3f}',
+                    'BSM Analytical': '{:.3f}',
+                    'Difference': '{:+.3f}',
+                    'Error %': '{:.2f}%'
+                }).background_gradient(subset=['Error %'], cmap='RdYlGn_r', vmin=0, vmax=5),
+                use_container_width=True,
+                hide_index=True
             )
-    
+            
+            # Visual comparison
+            fig_comparison = go.Figure()
+            
+            fig_comparison.add_trace(go.Bar(
+                name='Monte Carlo',
+                x=comparison_data['Greek'],
+                y=comparison_data['Monte Carlo'],
+                marker_color='#1f77b4',
+                text=[f"{v:.4f}" for v in comparison_data['Monte Carlo']],
+                textposition='outside'
+            ))
+            
+            fig_comparison.add_trace(go.Bar(
+                name='BSM Analytical',
+                x=comparison_data['Greek'],
+                y=comparison_data['BSM Analytical'],
+                marker_color='#ff7f0e',
+                text=[f"{v:.4f}" for v in comparison_data['BSM Analytical']],
+                textposition='outside'
+            ))
+            
+            fig_comparison.update_layout(
+                title="Monte Carlo vs Black-Scholes-Merton Greeks",
+                xaxis_title="Greek",
+                yaxis_title="Value",
+                barmode='group',
+                height=450,
+                template="plotly_white",
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            st.plotly_chart(fig_comparison, use_container_width=True)
+            
+            # Add interpretation
+            avg_error = sum(comparison_data['Error %']) / len(comparison_data['Error %'])
+            if avg_error < 1:
+                st.success(f"✅ Excellent agreement! Average error: {avg_error:.3f}%")
+            elif avg_error < 3:
+                st.info(f"✓ Good agreement. Average error: {avg_error:.3f}%")
+            else:
+                st.warning(f"⚠️ Consider increasing simulation paths for better convergence. Average error: {avg_error:.3f}%")
     st.markdown("---")
     
     # Greeks Stress Test / Scenario Analysis

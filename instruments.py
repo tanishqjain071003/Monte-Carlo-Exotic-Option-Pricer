@@ -65,3 +65,17 @@ class LookbackOption(BaseOption):
             return np.maximum(ST - min, 0)
         else:
             return np.maximum(max - ST, 0)
+
+class DigitalOption(BaseOption):
+
+    def __init__(self, strike, payout, option_type = "call"):
+        self.K = strike
+        self.payout = payout
+        self.type = 1 if option_type == "call" else -1
+    
+    def payoff(self, paths):
+        ST = paths[:, -1]
+        if self.type == 1:
+            return np.where(ST > self.K, self.payout, 0)
+        else:
+            return np.where(ST < self.K, self.payout, 0)
