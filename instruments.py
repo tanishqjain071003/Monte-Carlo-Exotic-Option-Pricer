@@ -15,12 +15,17 @@ class VanillaOption(BaseOption):
         return np.maximum(self.type * (paths[:, -1] - self.K), 0)
 
 class AsianOption(BaseOption):
-    def __init__(self, strike, option_type = "call"):
+    def __init__(self, strike, option_type = "call", avg_type = "simple"):
         self.K = strike
         self.type = 1 if option_type == "call" else -1
+        self.avg_type = avg_type
 
     def payoff(self, paths):
-        averages = np.mean(paths[:, 1:], axis=1)
+        if self.avg_type == "arithmetic":
+            averages = np.mean(paths[:, 1:], axis=1)
+        elif self.avg_type == "geometric":
+            averages = np.exp(np.mean(np.log(paths[:, 1:]), axis=1))
+        
         return np.maximum(self.type * (averages - self.K), 0)
     
 
@@ -41,9 +46,9 @@ class BarrierOption(BaseOption):
             hit = np.any(paths >= self.B, axis = 1)
 
         if "out" in self.barrier_type:
-            return np.where(hit, 0, vanilla)  # Knocked out if barrier hit
+            return np.where(hit, 0, vanilla)
         else:
-            return np.where(hit, vanilla, 0)  # Activated if barrier hit
+            return np.where(hit, vanilla, 0)
 
 class LookbackOption(BaseOption):
     def __init__(self, lookback, option_type = "call"):
