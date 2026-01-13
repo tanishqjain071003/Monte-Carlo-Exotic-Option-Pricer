@@ -223,7 +223,7 @@ with st.sidebar:
     
     instrument_type = st.selectbox(
         "Option Type",
-        ["Vanilla", "Asian", "Barrier", "Lookback"],
+        ["Vanilla", "Asian", "Barrier", "Lookback", "Digital"],
         help="Select the type of option to price"
     )
     
@@ -244,6 +244,26 @@ with st.sidebar:
         )
         instrument_params = {
             'strike': strike,
+            'option_type': option_type.lower()
+        }
+    elif instrument_type == "Digital":
+        strike = st.number_input(
+            "Strike Price (K)",
+            min_value=1.0,
+            max_value=100000.0,
+            value=100.0,
+            step=1.0
+        )
+        payout = st.number_input(
+            "Payout Amount",
+            min_value=1.0,
+            max_value=100000.0,
+            value=10.0,
+            step=1.0
+        )
+        instrument_params = {
+            'strike': strike,
+            'payout': payout,
             'option_type': option_type.lower()
         }
     
