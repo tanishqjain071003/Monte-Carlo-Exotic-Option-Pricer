@@ -77,7 +77,7 @@ class GreekCalculator:
         bumped.sigma += self.dsigma
 
         price_bumped = self._price_with_process(bumped)
-        return (price_bumped - base) / self.dsigma*0.01
+        return ((price_bumped - base) / self.dsigma)*self.dsigma
 
     def rho(self):
         base = self._price_with_process(self.process)
