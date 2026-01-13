@@ -986,7 +986,7 @@ else:
     st.info("👈 Please configure the parameters in the sidebar and click 'Calculate Price & Greeks' to begin.")
     
     # Information section
-    with st.expander("ℹ️ About This Application"):
+    with st.expander("ℹ️ About This Application", expanded=True)):
         st.markdown("""
         ### Options & Exotic Options Pricer
         
@@ -1008,3 +1008,4 @@ else:
         #### Monte Carlo Method:
         The simulation uses Geometric Brownian Motion (GBM) with antithetic variates for variance reduction.
         """)
+ 
