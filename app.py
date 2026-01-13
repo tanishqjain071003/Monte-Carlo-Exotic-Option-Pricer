@@ -1,6 +1,3 @@
-"""
-Interactive Streamlit Application for Options and Exotic Options Pricing
-"""
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -165,7 +162,7 @@ with st.sidebar:
         T = days_to_expiration / 365.25  # Time in years (accounting for leap years)
     
     # Display calculated values with explanation
-    st.info(f"**Time to Expiration:** {days_to_expiration} calendar days ({trading_days} trading days) = {T:.4f} years")
+    st.info(f"**Time to Expiration:** {days_to_expiration} calendar days ({trading_days} trading days) = {T:.2f} years")
     
     st.markdown("---")
     st.header("🎲 Monte Carlo Parameters")
@@ -209,7 +206,7 @@ with st.sidebar:
         if steps == trading_days:
             st.success(f"✅ **Daily Pricing Mode:** {steps} steps = {trading_days} trading days (1 step per trading day)")
         else:
-            st.caption(f"📊 With {steps} steps: each step = {time_per_step*365.25:.2f} calendar days ({time_per_step*252:.2f} trading days) = {time_per_step:.4f} years")
+            st.caption(f"📊 With {steps} steps: each step = {time_per_step*365.25:.2f} calendar days ({time_per_step*252:.3f} trading days) = {time_per_step:.3f} years")
             st.info(f"💡 **Tip:** For daily pricing, set steps to {trading_days} (currently {steps})")
     
     paths = st.slider(
@@ -237,11 +234,11 @@ with st.sidebar:
     )
     
     # Instrument-specific parameters
-    if instrument_type == "Vanilla" or instrument_type == "Asian":
+    if instrument_type == "Vanilla":
         strike = st.number_input(
             "Strike Price (K)",
             min_value=1.0,
-            max_value=1000.0,
+            max_value=100000.0,
             value=100.0,
             step=1.0
         )
@@ -250,18 +247,38 @@ with st.sidebar:
             'option_type': option_type.lower()
         }
     
+    elif instrument_type == "Asian":
+        strike = st.number_input(
+            "Strike Price (K)",
+            min_value=1.0,
+            max_value=100000.0,
+            value=100.0,
+            step=1.0
+        )
+        avg_type = st.radio(
+            "Average Type",
+            ["Arithmetic", "Geometric"],
+            help="Average Type"
+        )
+        instrument_params = {
+            'strike': strike,
+            'avg_type': avg_type.lower(),
+            'option_type': option_type.lower()
+        }
+
+        
     elif instrument_type == "Barrier":
         strike = st.number_input(
             "Strike Price (K)",
             min_value=1.0,
-            max_value=1000.0,
+            max_value=10000.0,
             value=100.0,
             step=1.0
         )
         barrier = st.number_input(
             "Barrier Level (B)",
             min_value=1.0,
-            max_value=1000.0,
+            max_value=10000.0,
             value=80.0,
             step=1.0
         )
@@ -389,7 +406,7 @@ if st.session_state.results is not None:
         with col1:
             st.metric(
                 "Option Price (MC)",
-                f"${results['price']:.4f}",
+                f"${results['price']:.3f}",
                 help="Monte Carlo estimated option price"
             )
             
@@ -411,33 +428,33 @@ if st.session_state.results is not None:
                 
                 st.metric(
                     "Option Price (BSM)",
-                    f"${bsm_price_val:.4f}",
-                    delta=f"{diff:+.4f} ({diff_pct:+.2f}%)",
+                    f"${bsm_price_val:.3f}",
+                    delta=f"{diff:+.3f} ({diff_pct:+.2f}%)",
                     help="Black-Scholes-Merton analytical price (benchmark)"
                 )
-                st.caption(f"MC vs BSM: {abs(diff):.4f} difference")
+                st.caption(f"MC vs BSM: {abs(diff):.3f} difference")
         
         with col2:
             st.metric(
                 "Delta (Δ)",
-                f"{results['greeks']['delta']:.4f}",
+                f"{results['greeks']['delta']:.3f}",
                 help="Sensitivity to underlying price changes"
             )
             st.metric(
                 "Gamma (Γ)",
-                f"{results['greeks']['gamma']:.4f}",
+                f"{results['greeks']['gamma']:.3f}",
                 help="Rate of change of Delta"
             )
         
         with col3:
             st.metric(
                 "Vega (ν)",
-                f"{results['greeks']['vega']:.4f}",
+                f"{results['greeks']['vega']:.3f}",
                 help="Sensitivity to volatility changes"
             )
             st.metric(
                 "Rho (ρ)",
-                f"{results['greeks']['rho']:.4f}",
+                f"{results['greeks']['rho']:.3f}",
                 help="Sensitivity to interest rate changes"
             )
         
@@ -446,7 +463,7 @@ if st.session_state.results is not None:
         with col4:
             st.metric(
                 "Theta (Θ)",
-                f"{results['greeks']['theta']:.4f}",
+                f"{results['greeks']['theta']:.3f}",
                 help="Time decay of option value"
             )
     
@@ -538,8 +555,8 @@ if st.session_state.results is not None:
                 with comp_col1:
                     st.metric(
                         "Price Change",
-                        f"${stressed_price:.4f}",
-                        delta=f"${stressed_price - results['price']:+.4f}",
+                        f"${stressed_price:.3f}",
+                        delta=f"${stressed_price - results['price']:+.3f}",
                         help="Option price under stressed scenario"
                     )
                 
@@ -547,8 +564,8 @@ if st.session_state.results is not None:
                     delta_change = stressed_greeks['delta'] - results['greeks']['delta']
                     st.metric(
                         "Delta Change",
-                        f"{stressed_greeks['delta']:.4f}",
-                        delta=f"{delta_change:+.4f}",
+                        f"{stressed_greeks['delta']:.3f}",
+                        delta=f"{delta_change:+.3f}",
                         help="Delta under stressed scenario"
                     )
                 
@@ -556,8 +573,8 @@ if st.session_state.results is not None:
                     gamma_change = stressed_greeks['gamma'] - results['greeks']['gamma']
                     st.metric(
                         "Gamma Change",
-                        f"{stressed_greeks['gamma']:.4f}",
-                        delta=f"{gamma_change:+.4f}",
+                        f"{stressed_greeks['gamma']:.3f}",
+                        delta=f"{gamma_change:+.3f}",
                         help="Gamma under stressed scenario"
                     )
                 
@@ -596,10 +613,10 @@ if st.session_state.results is not None:
                 
                 st.dataframe(
                     comparison_df.style.format({
-                        'Base': '{:.4f}',
-                        'Stressed': '{:.4f}',
-                        'Change': '{:+.4f}',
-                        'Change %': '{:+.2f}%'
+                        'Base': '{:.3f}',
+                        'Stressed': '{:.3f}',
+                        'Change': '{:+.3f}',
+                        'Change %': '{:+.3f}%'
                     }),
                     use_container_width=True,
                     hide_index=True
@@ -655,7 +672,7 @@ if st.session_state.results is not None:
             x=greeks_data['Greek'],
             y=greeks_data['Value'],
             marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'],
-            text=[f"{v:.4f}" for v in greeks_data['Value']],
+            text=[f"{v:.3f}" for v in greeks_data['Value']],
             textposition='outside'
         )
     ])
@@ -678,7 +695,7 @@ if st.session_state.results is not None:
         n_sample_paths = st.slider(
             "Number of Sample Paths to Display",
             min_value=5,
-            max_value=50,
+            max_value=100,
             value=10,
             key="sample_paths"
         )
