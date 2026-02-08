@@ -9,23 +9,6 @@ from market_data import fetch_market_data, fetch_options_chain
 import json
 from datetime import datetime, date
 
-# #region agent log
-LOG_PATH = "/Users/tanishqjain/Desktop/Pricer Project/.cursor/debug.log"
-def debug_log(location, message, data, hypothesis_id=None):
-    try:
-        with open(LOG_PATH, "a") as f:
-            log_entry = {
-                "location": location,
-                "message": message,
-                "data": data,
-                "timestamp": pd.Timestamp.now().isoformat(),
-                "sessionId": "debug-session",
-                "hypothesisId": hypothesis_id
-            }
-            f.write(json.dumps(log_entry) + "\n")
-    except: pass
-# #endregion
-
 # Page configuration
 st.set_page_config(
     page_title="Options & Exotic Options Pricer",
@@ -328,25 +311,13 @@ with st.sidebar:
     # Calculate button
     calculate_button = st.button("🚀 Calculate Price & Greeks", type="primary")
     
-    # #region agent log
-    debug_log("app.py:185", "Button state check", {
-        "calculate_button": calculate_button,
-        "has_results": "results" in st.session_state
-    }, "A")
-    # #endregion
 
 # Initialize session state
 if "results" not in st.session_state:
     st.session_state.results = None
-    # #region agent log
-    debug_log("app.py:192", "Session state initialized", {"results": None}, "B")
-    # #endregion
 
 # Main content area
 if calculate_button:
-    # #region agent log
-    debug_log("app.py:198", "Calculate button clicked", {"button_clicked": True}, "A")
-    # #endregion
     try:
         with st.spinner("Running Monte Carlo simulation... This may take a moment."):
             # Create pricer instance
@@ -380,30 +351,13 @@ if calculate_button:
             
             st.session_state.pricer_params = new_params
             
-            # #region agent log
-            debug_log("app.py:211", "Results stored in session state", {
-                "price": float(results['price']),
-                "has_greeks": "greeks" in results,
-                "cleared_cache": "cached_paths" not in st.session_state
-            }, "B")
-            # #endregion
             
     except Exception as e:
         st.error(f"❌ Error during calculation: {str(e)}")
         st.exception(e)
-        # #region agent log
-        debug_log("app.py:390", "Calculation error", {"error": str(e)}, "D")
-        # #endregion
 
 # Display results from session state if they exist (even if button wasn't just clicked)
 if st.session_state.results is not None:
-    # #region agent log
-    debug_log("app.py:395", "Displaying results from session state", {
-        "has_results": True,
-        "calculate_button": calculate_button
-    }, "B")
-    # #endregion
-    
     results = st.session_state.results
     pricer_params = st.session_state.pricer_params
     
@@ -894,30 +848,12 @@ if st.session_state.results is not None:
             key="sample_paths"
         )
         
-        # #region agent log
-        debug_log("app.py:485", "Slider value retrieved", {
-            "n_sample_paths": n_sample_paths,
-            "has_results": True
-        }, "C")
-        # #endregion
-        
         # Only regenerate paths if slider value changed or not cached
         if "cached_paths" not in st.session_state or st.session_state.get("cached_n_paths") != n_sample_paths:
-            # #region agent log
-            debug_log("app.py:492", "Generating new sample paths", {
-                "n_sample_paths": n_sample_paths,
-                "was_cached": "cached_paths" in st.session_state
-            }, "C")
-            # #endregion
             sample_paths = pricer.generate_sample_paths(n_paths=n_sample_paths)
             st.session_state.cached_paths = sample_paths
             st.session_state.cached_n_paths = n_sample_paths
         else:
-            # #region agent log
-            debug_log("app.py:500", "Using cached paths", {
-                "n_sample_paths": n_sample_paths
-            }, "C")
-            # #endregion
             sample_paths = st.session_state.cached_paths
         
         time_points = np.linspace(0, pricer_params['T'], pricer_params['steps'] + 1)
