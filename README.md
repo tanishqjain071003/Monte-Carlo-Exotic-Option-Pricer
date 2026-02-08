@@ -1,6 +1,10 @@
 # Options & Exotic Options Pricer
 
-A Monte Carlo simulation-based options pricing application with interactive Streamlit interface, real-time market data integration, and advanced implied volatility visualization.
+A Monte Carlo simulation-based options pricing application with interactive Streamlit interface, real-time market data integration, and advanced implied volatility visualizatio
+
+https://github.com/user-attachments/assets/dcafee63-2ac2-44be-a4b3-002c64d8fa9c
+
+n.
 
 ## Features
 
